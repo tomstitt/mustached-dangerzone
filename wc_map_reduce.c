@@ -207,73 +207,60 @@ int main(int argc, char** argv) {
     // done with opening and jawn so on to the next
     // init buffers and locks and let's go to work
 
+    //pthread_mutex_t** reader_adder_locks = malloc(n * sizeof(pthread_mutex_t*));
     /*
-    pthread_mutex_t** reader_adder_locks = malloc(n * sizeof(pthread_mutex_t*));
     pthread_cond_t* reader_adder_queue_cond = malloc(n * sizeof(pthread_cond_t));
     pthread_t* reader_threads = malloc(n * sizeof(pthread_t));
     pthread_t* adder_threads = malloc(n * sizeof(pthread_t));
     queue** reader_adder_buffers = malloc(n * sizeof(queue));
-    entry*** adder_reducer_buffers = malloc(n * sizeof(entry*));
+    entry*** adder_reducer_buffers = calloc(n * DICTSIZE, sizeof(entry*));
     reader_args* rargs = malloc(n* sizeof(reader_args));
     adder_args* aargs = malloc(n* sizeof(adder_args));
     */
 
 
     // init locks
+    /*
     int i;
     int step;
     int start_addr;
     int replica_len;
 
     replica_len = file_len / n;
-    /*
-    for (i = 0; i < n; i++) {
-        adder_reducer_buffers[i] = malloc(DICTSIZE * sizeof(entry*));
-    }
     */
 
-    /*
     // init locks and conditionals
+    /*
     for (i = 0; i < n; i++) {
         assert(pthread_mutex_init(reader_adder_locks[i], NULL) == 0);
     }
-    */
+*/
+    //pthread_mutex_t *lock2 = malloc(sizeof(pthread_mutex_t*));
+    //int rv = pthread_mutex_init(lock2, NULL);
+    //assert(rv == 0);
 
     pthread_t read1;
-    //reader_adder_queue_cond[0] = PTHREAD_COND_INITIALIZER;
-    //pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
-
     pthread_t add;
     pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
     pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
     queue q;
-    entry **e = malloc(DICTSIZE * sizeof(entry*));
-    static entry *dict[DICTSIZE];
-
-
+    entry **e = calloc(DICTSIZE, sizeof(entry));
 
     reader_args ra = {file_buffer, file_len, &lock, &cond, &q};
+    adder_args aa = {&lock, &cond, &q, e};
 
-    adder_args aa = {&lock, &cond, &q, dict};
-
-    printf("starting thds\n");
     pthread_create(&read1, NULL, map_reader, &ra);
     pthread_create(&add, NULL, map_adder, &aa);
 
-    printf("started\n");
     pthread_join(read1, NULL);
     pthread_join(add, NULL);
 
-    printf("threads done\n");
+    dictionary_print(e);
 
-    dictionary_print(dict);
-
-    free(e);
     free(file_buffer);
+    free(e);
 
-
-
-
+    return 0;
 
 
     /*
@@ -331,8 +318,8 @@ int main(int argc, char** argv) {
     */
     /*
 
-    //free(file_buffer);
-    free(reader_adder_locks);
+    free(file_buffer);
+    //free(reader_adder_locks);
     free(reader_adder_queue_cond);
     free(reader_adder_buffers);
     free(adder_reducer_buffers);
@@ -341,8 +328,6 @@ int main(int argc, char** argv) {
     free(rargs);
     free(aargs);
     */
-
-    return 0;
 }
 
 
