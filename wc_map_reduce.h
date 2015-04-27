@@ -44,7 +44,7 @@ void* map_adder(void* args);
 
 void* map_reader(void* args);
 
-int reduce();
+int reduce(entry*** dicts, int n);
 
 int main(int argc, char** argv);
 

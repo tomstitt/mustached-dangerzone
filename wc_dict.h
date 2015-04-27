@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define HASHSIZE 283
+#define DICTSIZE 283
 
 typedef struct entry {
     struct entry* next;
@@ -15,3 +15,9 @@ unsigned hash(char* word);
 entry* lookup(entry** dict, char* s);
 
 int insert(entry** dict, char* word);
+
+int combine(entry** dict1, entry** dict2);
+
+void dictionary_print(entry** dict);
+
+void to_lower(char *s);

@@ -7,8 +7,8 @@ void* map_adder(void* args) {
     pthread_cond_t* cond = aa->cond;
     queue* q = aa->read_add_buf;
     entry** dict = aa->add_reduce_buf;
-    char* word_buffer;
     wc_node* node;
+    int count_val;
 
     do {
         // read to add to the dictionary, let's
@@ -19,28 +19,31 @@ void* map_adder(void* args) {
             pthread_cond_wait(cond, lock);
         }
         node = q->head;
-        q->count--;
         // there would be no next
         if (q->count != 0) {
             q->head = node->next;
         }
         // tell map-reader we removed from the que
         // if it was previously full
-        if (q->count == b) {
+        q->count--;
+        if (q->count == b-1) {
             pthread_cond_signal(cond);
         }
         pthread_mutex_unlock(lock);
+        count_val = node->count;
 
-        if (node->count != -1) {
+        if (count_val != -1) {
             insert(dict, node->word);
         }
-    } while (node->count != -1);
+        free(node->word);
+        free(node);
+    } while (count_val != -1);
 
     return 0;
 }
 
-
 void* map_reader(void* args) {
+    fprintf(stderr, "here\n");
     reader_args* ra = args;
     char* start_addr = ra->start_addr;
     char* cur_addr = start_addr;
@@ -91,8 +94,6 @@ void* map_reader(void* args) {
             if (q->count == 0) {
                 q->head = node;
                 q->tail = node;
-                // tell map-adder
-                pthread_cond_signal(cond);
             }
             // just add to the queue
             else {
@@ -100,8 +101,13 @@ void* map_reader(void* args) {
                 q->tail = node;
             }
             q->count++;
+            if (q->count == 1) {
+                pthread_cond_signal(cond);
+            }
+            //printf("added %s\n", node->word);
             pthread_mutex_unlock(lock);
         }
+        cur_addr += word_length;
     }
 
     // send one last node so the consumer knows to exit
@@ -117,25 +123,34 @@ void* map_reader(void* args) {
     while (q->count >= b) {
         pthread_cond_wait(cond, lock);
     }
-    q->count++;
     // is the queue empty?
     if (q->count == 0) {
         q->head = node;
         q->tail = node;
-        // tell map-adder
-        pthread_cond_signal(cond);
     }
     // just add to the queue
     else {
         q->tail->next = node;
         q->tail = node;
     }
+    q->count++;
+    if (q->count == 1) {
+        pthread_cond_signal(cond);
+    }
     pthread_mutex_unlock(lock);
 
     return 0;
 }
 
-int reduce();
+int reduce(entry*** dicts, int n) {
+    // we use dicts[0] as the combine dictionary
+    int i;
+    for (i = 1; i < n; i++) {
+        combine(dicts[0], dicts[i]);
+    }
+
+    return 0;
+}
 
 int main(int argc, char** argv) {
     FILE* f;
@@ -191,43 +206,97 @@ int main(int argc, char** argv) {
 
     // done with opening and jawn so on to the next
     // init buffers and locks and let's go to work
-    pthread_mutex_t** reader_adder_locks = malloc(n * sizeof(pthread_mutex_t));
-    pthread_cond_t** reader_adder_queue_cond = malloc(n * sizeof(pthread_cond_t));
-    pthread_t** reader_threads = malloc(n * sizeof(pthread_t));
-    pthread_t** adder_threads = malloc(n * sizeof(pthread_t));
+
+    /*
+    pthread_mutex_t** reader_adder_locks = malloc(n * sizeof(pthread_mutex_t*));
+    pthread_cond_t* reader_adder_queue_cond = malloc(n * sizeof(pthread_cond_t));
+    pthread_t* reader_threads = malloc(n * sizeof(pthread_t));
+    pthread_t* adder_threads = malloc(n * sizeof(pthread_t));
     queue** reader_adder_buffers = malloc(n * sizeof(queue));
     entry*** adder_reducer_buffers = malloc(n * sizeof(entry*));
     reader_args* rargs = malloc(n* sizeof(reader_args));
     adder_args* aargs = malloc(n* sizeof(adder_args));
+    */
+
 
     // init locks
     int i;
     int step;
     int start_addr;
-    int length;
     int replica_len;
 
     replica_len = file_len / n;
+    /*
+    for (i = 0; i < n; i++) {
+        adder_reducer_buffers[i] = malloc(DICTSIZE * sizeof(entry*));
+    }
+    */
 
+    /*
     // init locks and conditionals
     for (i = 0; i < n; i++) {
         assert(pthread_mutex_init(reader_adder_locks[i], NULL) == 0);
-        assert(pthread_cond_init(reader_adder_queue_cond[i], NULL) == 0);
     }
+    */
+
+    pthread_t read1;
+    //reader_adder_queue_cond[0] = PTHREAD_COND_INITIALIZER;
+    //pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
+
+    pthread_t add;
+    pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
+    pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+    queue q;
+    entry **e = malloc(DICTSIZE * sizeof(entry*));
+    static entry *dict[DICTSIZE];
 
 
+
+    reader_args ra = {file_buffer, file_len, &lock, &cond, &q};
+
+    adder_args aa = {&lock, &cond, &q, dict};
+
+    printf("starting thds\n");
+    pthread_create(&read1, NULL, map_reader, &ra);
+    pthread_create(&add, NULL, map_adder, &aa);
+
+    printf("started\n");
+    pthread_join(read1, NULL);
+    pthread_join(add, NULL);
+
+    printf("threads done\n");
+
+    dictionary_print(dict);
+
+    free(e);
+    free(file_buffer);
+
+
+
+
+
+
+    /*
     start_addr = 0;
     for (i = 0; i < n; i++) {
+        reader_adder_queue_cond[i] = PTHREAD_COND_INITIALIZER;
+
         step = 0;
-        while (file_buffer[start_addr + length + step] != ' ') {
+        while (start_addr + replica_len + step < file_len &&
+               file_buffer[start_addr + replica_len + step] != ' ') {
             step += 1;
         }
         // map-reader arg struct
         rargs[i].start_addr = file_buffer + start_addr;
-        rargs[i].length = length + step;
+        if (i == n-1) {
+            rargs[i].length = file_len - start_addr;
+        }
+        else {
+            rargs[i].length = replica_len + step;
+        }
         rargs[i].read_add_buf = reader_adder_buffers[i];
         rargs[i].lock = reader_adder_locks[i];
-        rargs[i].cond = reader_adder_queue_cond[i];
+        rargs[i].cond = &reader_adder_queue_cond[i];
 
         // map-adder arg struct
         aargs[i].read_add_buf = reader_adder_buffers[i];
@@ -235,13 +304,34 @@ int main(int argc, char** argv) {
         aargs[i].lock = reader_adder_locks[i];
         aargs[i].cond = reader_adder_queue_cond[i];
 
-        pthread_create(reader_threads[i], NULL, map_reader, &rargs[i]);
-        pthread_create(adder_threads[i], NULL, map_adder, &aargs[i]);
+        pthread_create(&reader_threads[i], NULL, map_reader, &rargs[i]);
+        pthread_create(&adder_threads[i], NULL, map_adder, &aargs[i]);
 
-        start_addr += length + step;
+        start_addr += replica_len + step;
+    }
+    for (i = 0; i < n; i++) {
+        pthread_join(reader_threads[i], NULL);
+        pthread_join(adder_threads[i], NULL);
     }
 
-    free(file_buffer);
+
+    reduce(adder_reducer_buffers, n);
+
+    // print everything
+    print(adder_reducer_buffers[0]);
+    */
+    /*
+    for (i = 0; i < n; i++) {
+        assert(pthread_mutex_destroy(reader_adder_locks[i]) == 0);
+    }
+    // memory leak
+    for (i = 0; i < n; i++) {
+        free(adder_reducer_buffers[i]);
+    }
+    */
+    /*
+
+    //free(file_buffer);
     free(reader_adder_locks);
     free(reader_adder_queue_cond);
     free(reader_adder_buffers);
@@ -250,6 +340,7 @@ int main(int argc, char** argv) {
     free(adder_threads);
     free(rargs);
     free(aargs);
+    */
 
     return 0;
 }
