@@ -1,11 +1,44 @@
 // Thomas Stitt - CMPSC 473 - Project 3 - 5/1/15
 #include "wc_map_reduce.h"
 
-
 void* map_adder(void* args) {
     adder_args* aa = args;
+    pthread_mutex_t* lock = aa->lock;
+    pthread_cond_t* cond = aa->cond;
+    queue* q = aa->read_add_buf;
+    entry** dict = aa->add_reduce_buf;
+    char* word_buffer;
+    wc_node* node;
+
+    do {
+        // read to add to the dictionary, let's
+        // get the lock
+        pthread_mutex_lock_safe(lock);
+        // if the queue is empty
+        while (q->count < 1) {
+            pthread_cond_wait(cond, lock);
+        }
+        node = q->head;
+        q->count--;
+        // there would be no next
+        if (q->count != 0) {
+            q->head = node->next;
+        }
+        // tell map-reader we removed from the que
+        // if it was previously full
+        if (q->count == b) {
+            pthread_cond_signal(cond);
+        }
+        pthread_mutex_unlock(lock);
+
+        if (node->count != -1) {
+            insert(dict, node->word);
+        }
+    } while (node->count != -1);
+
     return 0;
 }
+
 
 void* map_reader(void* args) {
     reader_args* ra = args;
@@ -26,47 +59,78 @@ void* map_reader(void* args) {
     pthread_mutex_unlock(lock);
 
     while (cur_addr < start_addr + length) {
+        // find a valid word character
+        while (cur_addr < start_addr + length && !is_word_char(*cur_addr)) {
+            cur_addr++;
+        }
+
+        // valid word char and not over our length
         word_length = 0;
-        // valid word char
-        while ((*cur_addr >= 48 && *cur_addr <= 57) ||
-               (*cur_addr >= 65 && *cur_addr <= 90) ||
-               (*cur_addr >= 97 && *cur_addr <= 122) ||
-               (*cur_addr == 39 || *cur_addr == '-')) {
+        while (cur_addr + word_length < start_addr + length &&
+               is_word_char(*(cur_addr + word_length))) {
             word_length++;
         }
+
+        // if we actually have a word
         if (word_length > 0) {
+            // create a word node
             node = malloc(sizeof(wc_node));
             node->word = malloc(word_length + 1);
-            memcpy(node->word, start_addr, word_length);
+            memcpy(node->word, cur_addr, word_length);
             node->word[word_length] = '\0';
+            node->next = NULL;
+            node->count = 1;
+
+            // get the lock
             pthread_mutex_lock_safe(lock);
-
+            // if the queue full?
             while (q->count >= b) {
-                pthread_cond_wait()
+                pthread_cond_wait(cond, lock);
             }
-
-            if (q->count < b) {
-                if (q->count == 0) {
-                    q->head = node;
-                    q->tail = node;
-                }
-                else {
-                    q->tail->next = node;
-                    q->tail = node;
-                }
-                q->count++;
+            // is the queue empty?
+            if (q->count == 0) {
+                q->head = node;
+                q->tail = node;
+                // tell map-adder
+                pthread_cond_signal(cond);
             }
+            // just add to the queue
+            else {
+                q->tail->next = node;
+                q->tail = node;
+            }
+            q->count++;
+            pthread_mutex_unlock(lock);
         }
-
-
-
     }
 
+    // send one last node so the consumer knows to exit
+    // it has a count of NO_MORE_WORDS
+    node = malloc(sizeof(wc_node));
+    node->word = NULL;
+    node->count = NO_MORE_WORDS;
+    node->next = NULL;
 
-
-
-
-
+    // still need to talk out the locks and do all the checks
+    pthread_mutex_lock_safe(lock);
+    // if the queue full?
+    while (q->count >= b) {
+        pthread_cond_wait(cond, lock);
+    }
+    q->count++;
+    // is the queue empty?
+    if (q->count == 0) {
+        q->head = node;
+        q->tail = node;
+        // tell map-adder
+        pthread_cond_signal(cond);
+    }
+    // just add to the queue
+    else {
+        q->tail->next = node;
+        q->tail = node;
+    }
+    pthread_mutex_unlock(lock);
 
     return 0;
 }
@@ -132,7 +196,7 @@ int main(int argc, char** argv) {
     pthread_t** reader_threads = malloc(n * sizeof(pthread_t));
     pthread_t** adder_threads = malloc(n * sizeof(pthread_t));
     queue** reader_adder_buffers = malloc(n * sizeof(queue));
-    entry** adder_reducer_buffers = malloc(n * sizeof(entry*));
+    entry*** adder_reducer_buffers = malloc(n * sizeof(entry*));
     reader_args* rargs = malloc(n* sizeof(reader_args));
     adder_args* aargs = malloc(n* sizeof(adder_args));
 
@@ -190,6 +254,13 @@ int main(int argc, char** argv) {
     return 0;
 }
 
+
+int is_word_char(char c) {
+    return (c >= 48 && c <= 57) ||
+           (c >= 65 && c <= 90) ||
+           (c >= 97 && c <= 122) ||
+           (c == 39 || c == '-');
+}
 
 void pthread_mutex_lock_safe(pthread_mutex_t *mutex) {
     assert(pthread_mutex_lock(mutex) == 0);
