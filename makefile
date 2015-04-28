@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -g -pthread -Wall -O0 -ggdb
+CFLAGS = -g -pthread -Wall
 EXEC = cmpsc473mr
 OBJS := $(patsubst %.c,%.o,$(wildcard *.c))
 

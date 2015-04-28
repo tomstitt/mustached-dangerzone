@@ -14,7 +14,7 @@ unsigned hash(char* word);
 
 entry* lookup(entry** dict, char* s);
 
-int insert(entry** dict, char* word);
+int insert(entry** dict, char* word, int count);
 
 int combine(entry** dict1, entry** dict2);
 

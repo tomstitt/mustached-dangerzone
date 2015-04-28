@@ -20,7 +20,7 @@ entry* lookup(entry** dict, char* s)
     return NULL;
 }
 
-int insert(entry** dict, char* word) {
+int insert(entry** dict, char* word, int count) {
     entry* e;
     unsigned hashval;
     // not found, create entry and set to 1
@@ -30,14 +30,14 @@ int insert(entry** dict, char* word) {
             fprintf(stderr, "Problem adding to dictionary\n");
             return 1;
         }
-        e->wc = 1;
+        e->wc = count;
         hashval = hash(word);
         e->next = dict[hashval];
         dict[hashval] = e;
     }
     // found, increment
     else {
-        e->wc++;
+        e->wc += count;
     }
 
     return 0;
@@ -49,7 +49,7 @@ int combine(entry** dict1, entry** dict2) {
     entry* p;
     for (e = 0; e < DICTSIZE; e++) {
         for (p = dict2[e]; p != NULL; p = p->next) {
-            insert(dict1, p->word);
+            insert(dict1, p->word, p->wc);
         }
     }
 
