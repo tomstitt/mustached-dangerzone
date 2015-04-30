@@ -198,7 +198,6 @@ int main(int argc, char** argv) {
 
     // done with opening and jawn so on to the next
     // init buffers and locks and let's go to work
-    //queue** ra_queue = malloc(n * sizeof(queue));
 
     entry** ar_ds = calloc(n * DICTSIZE, sizeof(entry*));
     queue* ra_queues = calloc(n, sizeof(queue));
@@ -208,9 +207,7 @@ int main(int argc, char** argv) {
     adder_args aargs[n];
     pthread_mutex_t locks[n];
     pthread_cond_t conds[n];
-    //ueue ra_queues[n];
 
-    // init locks
     int i;
     int step;
     int start_addr;
@@ -247,9 +244,6 @@ int main(int argc, char** argv) {
     dictionary_print(ar_ds);
     */
 
-
-
-
     start_addr = 0;
     for (i = 0; i < n; i++) {
         step = 0;
@@ -275,8 +269,14 @@ int main(int argc, char** argv) {
         aargs[i].lock = &locks[i];
         aargs[i].cond = &conds[i];
 
-        pthread_create(&rthreads[i], NULL, map_reader, &rargs[i]);
-        pthread_create(&athreads[i], NULL, map_adder, &aargs[i]);
+        if (pthread_create(&rthreads[i], NULL, map_reader, &rargs[i]) != 0) {
+            fprintf(stderr, "Problem creating reader thread %d, exiting\n", i+1);
+            exit(1);
+        }
+        if (pthread_create(&athreads[i], NULL, map_adder, &aargs[i]) != 0) {
+            fprintf(stderr, "Problem creating adder thread %d, exiting\n", i+1);
+            exit(1);
+        }
 
         start_addr += replica_len + step;
     }
