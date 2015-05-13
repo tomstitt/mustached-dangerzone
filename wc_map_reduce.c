@@ -1,4 +1,5 @@
-// Thomas Stitt - CMPSC 473 - Project 3 - 5/1/15
+// Thomas Stitt - CMPSC 473- Project 3 - 4/5/15
+
 #include "wc_map_reduce.h"
 
 void* map_adder(void* args) {
@@ -166,7 +167,6 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    // delete later
     printf ("n is %d, b is %d\n", n, atoi(argv[3]));
 
     f = fopen(argv[1], "r");
@@ -198,7 +198,6 @@ int main(int argc, char** argv) {
 
     // done with opening and jawn so on to the next
     // init buffers and locks and let's go to work
-
     entry** ar_ds = calloc(n * DICTSIZE, sizeof(entry*));
     queue* ra_queues = calloc(n, sizeof(queue));
     pthread_t rthreads[n];
@@ -219,30 +218,6 @@ int main(int argc, char** argv) {
         assert(pthread_mutex_init(&locks[i], NULL) == 0);
         assert(pthread_cond_init(&conds[i], NULL) == 0);
     }
-    /*
-    rargs[0].start_addr = file_buffer;
-    rargs[0].length = file_len;
-    rargs[0].read_add_buf = ra_queues;
-    rargs[0].lock = &locks[0];
-    rargs[0].cond = &conds[0];
-
-    // map-adder arg struct
-    aargs[0].read_add_buf = ra_queues;
-    aargs[0].add_reduce_buf = ar_ds;
-    aargs[0].lock = &locks[0];
-    aargs[0].cond = &conds[0];
-
-    printf("1\n");
-    pthread_create(&rthreads[0], NULL, map_reader, &rargs[0]);
-    pthread_create(&athreads[0], NULL, map_adder, &aargs[0]);
-    printf("2\n");
-
-    pthread_join(rthreads[0], NULL);
-    pthread_join(athreads[0], NULL);
-    printf("3\n");
-
-    dictionary_print(ar_ds);
-    */
 
     start_addr = 0;
     for (i = 0; i < n; i++) {
@@ -269,6 +244,7 @@ int main(int argc, char** argv) {
         aargs[i].lock = &locks[i];
         aargs[i].cond = &conds[i];
 
+        // make sure the threads actually spawn
         if (pthread_create(&rthreads[i], NULL, map_reader, &rargs[i]) != 0) {
             fprintf(stderr, "Problem creating reader thread %d, exiting\n", i+1);
             exit(1);
@@ -281,6 +257,7 @@ int main(int argc, char** argv) {
         start_addr += replica_len + step;
     }
 
+    // join and destroy the locks and conditionals
     for (i = 0; i < n; i++) {
         pthread_join(rthreads[i], NULL);
         pthread_join(athreads[i], NULL);
@@ -291,9 +268,11 @@ int main(int argc, char** argv) {
         assert(pthread_cond_destroy(&conds[i]) == 0);
     }
 
+    // reduce and print
     reduce(ar_ds, n);
     dictionary_print(ar_ds);
 
+    // cleanup
     free(ar_ds);
     free(ra_queues);
     free(file_buffer);

@@ -1,4 +1,5 @@
-// Thomas Stitt - CMPSC 473 - Project 3 - 5/1/15
+// Thomas Stitt - CMPSC 473- Project 3 - 4/5/15
+
 #include <pthread.h>
 #include <stdio.h>
 #include <assert.h>

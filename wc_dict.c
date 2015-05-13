@@ -1,3 +1,5 @@
+// Thomas Stitt - CMPSC 473- Project 3 - 4/5/15
+
 #include "wc_dict.h"
 
 unsigned hash(char *s) {
@@ -23,9 +25,10 @@ entry* lookup(entry** dict, char* s)
 int insert(entry** dict, char* word, int count) {
     entry* e;
     unsigned hashval;
-    // not found, create entry and set to 1
+    // not found, create entry and set to count
     if ((e = lookup(dict, word)) == NULL) {
         e = (entry*)malloc(sizeof(entry));
+        // dictionary error
         if (e == NULL || (e->word = strdup(word)) == NULL) {
             fprintf(stderr, "Problem adding to dictionary\n");
             return 1;
@@ -64,11 +67,4 @@ void dictionary_print(entry** dict) {
             printf("%s - %d\n", p->word, p->wc);
         }
     }
-}
-
-void to_lower(char *s) {
-    for (;*s != '\0'; s++) {
-//        if (s k
-    }
-
 }

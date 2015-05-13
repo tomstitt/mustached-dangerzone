@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -g -pthread -Wall
-EXEC = cmpsc473mr
+EXEC = project
 OBJS := $(patsubst %.c,%.o,$(wildcard *.c))
 
 $(EXEC): $(OBJS)
