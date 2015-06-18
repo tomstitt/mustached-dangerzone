@@ -4,14 +4,14 @@ Thomas Stitt - CMPSC 473 - Project 3 - 4/5/15
 Map-Reduce for text file word counts.
 
 build
-'''shell
+```shell
 # make
-'''
+```
 clean
-''' shell
+```shell
 # make clean
-'''
+```
 run
-'''shell
+```shell
 # ./project [input file] [number of replicas > 0] [buffer size > 0]
-'''
+```
