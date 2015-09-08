@@ -1,6 +1,6 @@
 // Thomas Stitt - CMPSC 473 - Project 3 - 4/5/15
 
-#include "wc_dict.h"
+include "wc_dict.h"
 
 unsigned hash(char *s) {
     unsigned hashval;
