@@ -1,0 +1,158 @@
+Installing Bamboo on Mac OS X
+
+This page contains instructions to help you install Bamboo on Mac.
+
+Note that Bamboo ships with a built-in HSQL database, which is fine for evaluation purposes but is somewhat susceptible to data loss during system crashes. For production environments we recommend that you configure Bamboo to use an external database.
+1. Check supported platforms
+
+Better check the Supported platforms page first; it lists the application servers, databases, operating systems, web browsers and JDKs that we have tested Bamboo with and recommend.
+
+ Note that Atlassian currently only supports Bamboo on x86 and 64-bit x86 derived hardware platforms.
+
+On this page:
+
+    1. Check supported platforms
+    2. Install Java
+    3. Check permissions
+    4. Download Bamboo 
+    5. Start Bamboo!
+    6. Configure Bamboo
+    7. Running Bamboo as a service
+    Known issues and troubleshooting
+
+Related pages:
+
+    Running the Bamboo Setup Wizard
+
+2. Install Java
+
+Using Mac OS X 10.9 Mavericks?
+
+You will need to skip the steps below and install Java 8 manually from Apple Support.
+
+To check if you have Java installed, and the version, run this command in a terminal:
+1
+
+java -version
+
+The version of Java should be 1.8.x.
+
+If Java is not on your system, Mac OS X will prompt you to install it. You can test that it installed correctly by running the command above a second time. 
+3. Check permissions
+
+Check your system permissions. You will need to have permissions for both the Bamboo installation and home directories. 
+4. Download Bamboo 
+
+    Download the Bamboo tar.gz archive from the Atlassian download site.
+    Extract the downloaded file to an install location. The path to the extracted directory is referred to as the <Bamboo installation directory> in these instructions.
+
+    Create your Bamboo home directory (without spaces in the name), and then edit the <Bamboo installation directory>/atlassian-bamboo/WEB-INF/classes/bamboo-init.properties file – uncomment the bamboo.home line and add the absolute path to your home directory. Here's an example of what that could look like when you're done:
+
+     
+
+    Important
+
+    You should not locate your Bamboo home directory inside the <Bamboo installation directory> — they should be entirely separate locations. If you do put the home directory in the <Bamboo installation directory> it will be overwritten, and lost, when Bamboo gets upgraded.
+
+    You must use forward-slashes in your directory path. Backslashes are not recognised by Bamboo.
+
+5. Start Bamboo!
+
+In Terminal, change directory to <Bamboo installation directory> and run this command:
+
+1
+
+bin/start-bamboo.sh
+
+Access your running Bamboo instance by going to your web browser and entering the address:  http://localhost:8085/ .
+6. Configure Bamboo
+
+Configure Bamboo using the Setup Wizard that is displayed. Read Running the Setup Wizard for further instructions.
+7. Running Bamboo as a service
+
+If you want to run Bamboo as a service, then please consult Running Bamboo as a service.
+
+Known issues and troubleshooting
+
+If something is not working correctly after you have completed the steps above to install Bamboo, please check for known Bamboo issues and try troubleshooting your upgrade as described below:
+
+    Check for known issues. Sometimes we find out about a problem with the latest version of Bamboo after we have released the software. In such cases we publish information about the known issues in the Bamboo Knowledge Base. Please check the known issues in the Bamboo Knowledge Base and follow the instructions to apply any necessary patches if necessary.
+
+    Did you encounter a problem during the Bamboo installation? Please refer to the guide to troubleshooting upgrades in the Bamboo Knowledge Base.
+
+    If you encounter a problem during the upgrade and cannot solve it, please create a support ticket and one of our support engineers will help you.
+
+Was this helpful?
+
+7 Archived comments
+
+    User avatar
+
+    Alen
+
+    We've installed 6 different Atlassian products over the last month or so. The installation is smooth usually. But the toughest part is making your products start up at boot-time. I don't understand why this is not documented ( BTW, I don't need to explain how crucial it is to have your services start up once our servers restart). This is true for both Linux and OS X installs. It would seem easy to document it at least for OS X and some of the main Linux distros out there.
+
+    Anyway, is there a good tutorial on how to do this on OS X Lion? Well, we are gonna try to run this on OS X Lion Server, but I am sure it's all the same.
+    17 Dec 2011
+        User avatar
+
+        Anonymous
+
+        Configuring Bamboo to start automatically on startup on Mac OS X
+        06 Feb 2013
+    User avatar
+
+    Anonymous
+
+    There is no dmg available for OSX installation.
+    21 Feb 2014
+    User avatar
+
+    Nathan Pye [Atlassian]
+
+    Hi,
+
+    Check out the 'Known issues' section of the Bamboo Upgrade Guide for more information on the OS X dmg installation pathway.
+
+    Cheers,
+
+    Nathan
+    23 Feb 2014
+        User avatar
+
+        Alison Huselid [Atlassian]
+
+        The workaround listed under the known issue for the MAC installer is if you were able to download the dmg file and hit an error, but now the dmg isn't available to download, only a tar file.  Are there directions for installation if you have the tar file instead of the dmg?
+        24 Mar 2014
+            User avatar
+
+            Nathan Pye [Atlassian]
+
+            Hi Alison,
+
+            If you only have the tar file, then you should follow the instructions as they are described for the Linux installation:
+
+            Installing Bamboo on Linux
+
+            Make sure you already have Java installed in the Mac way: Installing Java for OS X 2013-005
+
+            I hope this helps,
+
+            Cheers,
+
+            Nathan
+            24 Mar 2014
+            User avatar
+
+            Joshua Pore
+
+            You can actually download the .dmg from https://www.atlassian.com/software/bamboo/download-archives
+
+            At the time of writing, 5.6.2 is the latest release and only 5.6.1 is shown on the download archive, but if you manually change the download link it works:
+
+            http://downloads.atlassian.com/software/bamboo/downloads/atlassian-bamboo-5.6.2.dmg
+
+             
+
+             
+            31 Oct 2014
